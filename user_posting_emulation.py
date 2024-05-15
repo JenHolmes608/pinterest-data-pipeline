@@ -29,39 +29,63 @@ class AWSDBConnector:
 new_connector = AWSDBConnector()
 
 
-def run_infinite_post_data_loop():
-    while True:
-        sleep(random.randrange(0, 2))
-        random_row = random.randint(0, 11000)
-        engine = new_connector.create_db_connector()
+class SendData():
+    def __init__(self):
+        self.max_iterations = 10 
+        self.current_iteration = 0 
+        
+    def run_post_data_loop(self):
+        while self.current_iteration < self.max_iterations:
+            sleep(random.randrange(0, 2))
+            random_row = random.randint(0, 11000)
+            engine = new_connector.create_db_connector()
 
-        with engine.connect() as connection:
+            with engine.connect() as connection:
+                pin_string = text(f"SELECT * FROM pinterest_data LIMIT {random_row}, 1")
+                pin_selected_row = connection.execute(pin_string)
+                
+                for row in pin_selected_row:
+                    pin_result = dict(row._mapping)
 
-            pin_string = text(f"SELECT * FROM pinterest_data LIMIT {random_row}, 1")
-            pin_selected_row = connection.execute(pin_string)
-            
-            for row in pin_selected_row:
-                pin_result = dict(row._mapping)
+                geo_string = text(f"SELECT * FROM geolocation_data LIMIT {random_row}, 1")
+                geo_selected_row = connection.execute(geo_string)
+                
+                for row in geo_selected_row:
+                    geo_result = dict(row._mapping)
 
-            geo_string = text(f"SELECT * FROM geolocation_data LIMIT {random_row}, 1")
-            geo_selected_row = connection.execute(geo_string)
-            
-            for row in geo_selected_row:
-                geo_result = dict(row._mapping)
+                user_string = text(f"SELECT * FROM user_data LIMIT {random_row}, 1")
+                user_selected_row = connection.execute(user_string)
+                
+                for row in user_selected_row:
+                    user_result = dict(row._mapping)
 
-            user_string = text(f"SELECT * FROM user_data LIMIT {random_row}, 1")
-            user_selected_row = connection.execute(user_string)
-            
-            for row in user_selected_row:
-                user_result = dict(row._mapping)
-            
-            print(pin_result)
-            print(geo_result)
-            print(user_result)
+                self.send_data_to_kafka_topic(pin_result, 'pin')
+                self.send_data_to_kafka_topic(geo_result, 'geo')
+                self.send_data_to_kafka_topic(user_result, 'user')
+                
+                self.current_iteration += 1 
 
+            if self.current_iteration >= self.max_iterations:
+                break
+
+    def send_data_to_kafka_topic(self, data, topic_name):
+        api_invoke_url = 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage'
+        headers = {'Content-Type': 'application/vnd.kafka.json.v2+json'}
+        response = requests.post(api_invoke_url + f'/{topic_name}', headers=headers, data=json.dumps(data, default=str))
+        if response.status_code == 200:
+            print(f"Data sent to Kafka topic '{topic_name}' successfully.")
+        else:
+            print(f"Failed to send data to Kafka topic '{topic_name}'. Status code: {response.status_code}")
+
+
+send_data_instance = SendData()
+
+
+send_data_instance.run_post_data_loop()
 
 if __name__ == "__main__":
-    run_infinite_post_data_loop()
+    send_data_instance = SendData()
+    send_data_instance.run_infinite_post_data_loop()
     print('Working')
     
     
