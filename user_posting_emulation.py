@@ -59,9 +59,9 @@ class SendData():
                 for row in user_selected_row:
                     user_result = dict(row._mapping)
 
-                self.send_data_to_kafka_topic(pin_result, 'pin')
-                self.send_data_to_kafka_topic(geo_result, 'geo')
-                self.send_data_to_kafka_topic(user_result, 'user')
+                self.send_data_to_kafka_topic(pin_result, '0afff69adbe3.pin')
+                self.send_data_to_kafka_topic(geo_result, '0afff69adbe3.geo')
+                self.send_data_to_kafka_topic(user_result, '0afff69adbe3.user')
                 
                 self.current_iteration += 1 
 
@@ -69,9 +69,12 @@ class SendData():
                 break
 
     def send_data_to_kafka_topic(self, data, topic_name):
-        api_invoke_url = 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage'
+        api_invoke_url = 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/topics'
         headers = {'Content-Type': 'application/vnd.kafka.json.v2+json'}
-        response = requests.post(api_invoke_url + f'/{topic_name}', headers=headers, data=json.dumps(data, default=str))
+        payload = {
+            "records": [{"value": data}]
+        }
+        response = requests.post(api_invoke_url + f'/{topic_name}', headers=headers, data=json.dumps(payload, default=str))
         if response.status_code == 200:
             print(f"Data sent to Kafka topic '{topic_name}' successfully.")
         else:
