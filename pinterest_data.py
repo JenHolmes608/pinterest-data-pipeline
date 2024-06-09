@@ -27,19 +27,11 @@ ENCODED_SECRET_KEY = urllib.parse.quote(string=SECRET_KEY, safe="")
 # AWS S3 bucket name
 AWS_S3_BUCKET = "0afff69adbe3-bucket"
 # Mount name for the bucket
-MOUNT_NAME = "/mnt/mount_data"
+MOUNT_NAME = "/mnt/mount_name"
 # Source url
 SOURCE_URL = "s3n://{0}:{1}@{2}".format(ACCESS_KEY, ENCODED_SECRET_KEY, AWS_S3_BUCKET)
 # Mount the drive
 dbutils.fs.mount(SOURCE_URL, MOUNT_NAME)
-
-# COMMAND ----------
-
-dbutils.fs.unmount("/mnt/pinterest_data")
-
-# COMMAND ----------
-
-display(dbutils.fs.ls("/mnt/mount_name/topics/topics/1209b9ad90a5.pin"))
 
 # COMMAND ----------
 
