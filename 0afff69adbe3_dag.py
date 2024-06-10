@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 
 #Define params for Submit Run Operator
 notebook_task = {
-    'notebook_path': '/Users/holmes_jennifer@ymail.com/pinterest-data-pipeline/pinterest_data',
+    'notebook_path': '/workspace/Users/holmes_jennifer@ymail.com/pinterest-data-pipeline/pinterest_data',
 }
+
 
 
 #Define params for Run Now Operator
