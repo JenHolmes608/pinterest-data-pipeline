@@ -1,8 +1,4 @@
 # Databricks notebook source
-# MAGIC %
-
-# COMMAND ----------
-
 import sys 
 sys.path.append("/Workspace/Users/holmes_jennifer@ymail.com/pinterest-data-pipeline")
 
@@ -63,11 +59,20 @@ df_pin = spark \
 .option('region','us-east-1') \
 .option('awsAccessKey', ACCESS_KEY) \
 .option('awsSecretKey', SECRET_KEY) \
+.option("mergeSchema", "true")\
 .load()
 
-pin_df = pin_df.selectExpr("CAST(data AS STRING) jsonData")
-pin_df = pin_df.select(from_json("jsonData", pin_struct).alias("data")).select("data.*")
-pin_df = clean_pin_df(pin_df)
+df_pin = df_pin.selectExpr("CAST(data AS STRING) jsonData")
+df_pin = df_pin.select(from_json("jsonData", pin_struct).alias("data")).select("data.*")
+df_pin = clean_df_pin(df_pin)
+
+display(df_pin)
+
+df_pin.writeStream \
+  .format("delta") \
+  .outputMode("append") \
+  .option("checkpointLocation", "/tmp/kinesis/_checkpoints/") \
+  .table("0afff69adbe3_pin_table")
 
 # COMMAND ----------
 
@@ -89,9 +94,17 @@ df_geo = spark \
 .option('awsSecretKey', SECRET_KEY) \
 .load()
 
-geo_df = geo_df.selectExpr("CAST(data AS STRING) jsonData")
-geo_df = geo_df.select(from_json("jsonData", geo_struct).alias("data")).select("data.*")
-geo_df = clean_geo_df(geo_df)
+df_geo = df_geo.selectExpr("CAST(data AS STRING) jsonData")
+df_geo = df_geo.select(from_json("jsonData", geo_struct).alias("data")).select("data.*")
+df_geo = clean_df_geo(df_geo)
+
+display(df_geo)
+
+df_geo.writeStream \
+  .format("delta") \
+  .outputMode("append") \
+  .option("checkpointLocation", "/tmp/kinesis/_checkpoints/") \
+  .table("0afff69adbe3_geo_table")
 
 # COMMAND ----------
 
@@ -113,27 +126,11 @@ df_user = spark \
 .option('awsSecretKey', SECRET_KEY) \
 .load()
 
-user_df = user_df.selectExpr("CAST(data AS STRING) jsonData")
-user_df = user_df.select(from_json("jsonData", user_struct).alias("data")).select("data.*")
-user_df = clean_user_df(user_df)
+df_user = df_user.selectExpr("CAST(data AS STRING) jsonData")
+df_user = df_user.select(from_json("jsonData", user_struct).alias("data")).select("data.*")
+df_user = clean_df_user(df_user)
 
-# COMMAND ----------
-
-df_pin.writeStream \
-  .format("delta") \
-  .outputMode("append") \
-  .option("checkpointLocation", "/tmp/kinesis/_checkpoints/") \
-  .table("0afff69adbe3_pin_table")
-
-# COMMAND ----------
-
-df_geo.writeStream \
-  .format("delta") \
-  .outputMode("append") \
-  .option("checkpointLocation", "/tmp/kinesis/_checkpoints/") \
-  .table("0afff69adbe3_geo_table")
-
-# COMMAND ----------
+display(df_user)
 
 df_user.writeStream \
   .format("delta") \
