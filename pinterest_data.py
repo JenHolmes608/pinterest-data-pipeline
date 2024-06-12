@@ -31,7 +31,7 @@ MOUNT_NAME = "/mnt/mount_name"
 # Source url
 SOURCE_URL = "s3n://{0}:{1}@{2}".format(ACCESS_KEY, ENCODED_SECRET_KEY, AWS_S3_BUCKET)
 # Mount the drive
-# dbutils.fs.mount(SOURCE_URL, MOUNT_NAME) <-- this line was breaking your Airflow :)
+# dbutils.fs.mount(SOURCE_URL, MOUNT_NAME) 
 
 # COMMAND ----------
 
