@@ -71,7 +71,7 @@ def run_infinite_post_data_loop():
                 "PartitionKey": "partition-1"
             })
 
-            kin_pin_response = requests.request("PUT", 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/streams', headers={'Content-Type': 'application/json'}, data=pin_payload)
+            kin_pin_response = requests.request("PUT", 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/streams/streaming-0afff69adbe3-pin/record', headers={'Content-Type': 'application/json'}, data=pin_payload)
             print(kin_pin_response.status_code)
 
             geo_payload = json.dumps({
@@ -80,7 +80,7 @@ def run_infinite_post_data_loop():
                 "PartitionKey": "partition-2"
             })
 
-            kin_geo_response = requests.request("PUT", 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/streams', headers={'Content-Type': 'application/json'}, data=geo_payload)
+            kin_geo_response = requests.request("PUT", 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/streams/streaming-0afff69adbe3-geo/record', headers={'Content-Type': 'application/json'}, data=geo_payload)
             print(kin_geo_response.status_code)
 
             user_payload = json.dumps({
@@ -89,7 +89,7 @@ def run_infinite_post_data_loop():
                 "PartitionKey": "partition-3"
             })
 
-            kin_user_response = requests.request("PUT", 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/streams', headers={'Content-Type': 'application/json'}, data=user_payload)
+            kin_user_response = requests.request("PUT", 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/streams/streaming-0afff69adbe3-user/record', headers={'Content-Type': 'application/json'}, data=user_payload)
             print(kin_user_response.status_code)
 
 if __name__ == "__main__":
