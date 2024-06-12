@@ -56,57 +56,48 @@ display(df_pin)
 
 # COMMAND ----------
 
-# 1. Replace empty entries and entries with no relevant data in each column with Nones
-conditions = [
-    ("", None),
-    ("No description available Story format", None),
-    ("User Info Error", None),
-    ("Image src error.", None),
-    ("N,o, ,T,a,g,s, ,A,v,a,i,l,a,b,l,e", None),
-    ("No Title Data Available", None)
-]
+def clean_df_pin(df_pin):
+    # 1. Replace empty entries and entries with no relevant data in each column with Nones
+    conditions = [
+        ("", None),
+        ("No description available Story format", None),
+        ("User Info Error", None),
+        ("Image src error.", None),
+        ("N,o, ,T,a,g,s, ,A,v,a,i,l,a,b,l,e", None),
+        ("No Title Data Available", None)
+    ]
 
-# Function to apply multiple conditions
-def apply_conditions(col, conditions):
-    return reduce(lambda acc, cond: F.when(F.col(col) == cond[0], cond[1]).otherwise(acc), conditions, F.col(col))
+    # Function to apply multiple conditions
+    def apply_conditions(col, conditions):
+        return reduce(lambda acc, cond: F.when(F.col(col) == cond[0], cond[1]).otherwise(acc), conditions, F.col(col))
 
-# Apply the conditions to each column
-df_pin = df_pin.select([apply_conditions(c, conditions).alias(c) for c in df_pin.columns])
+    # Apply the conditions to each column
+    df_pin = df_pin.select([apply_conditions(c, conditions).alias(c) for c in df_pin.columns])
 
-# COMMAND ----------
+    # 2. Perform the necessary transformations on the follower_count to ensure every entry is a number and convert to int
+    # Remove non-numeric characters from follower_count and convert to integer
+    df_pin = df_pin.withColumn("follower_count", F.regexp_replace(F.col("follower_count"), "[^0-9]", ""))
+    df_pin = df_pin.withColumn("follower_count", F.col("follower_count").cast(IntegerType()))
 
-# 2. Perform the necessary transformations on the follower_count to ensure every entry is a number and convert to int
-# Remove non-numeric characters from follower_count and convert to integer
-df_pin = df_pin.withColumn("follower_count", F.regexp_replace(F.col("follower_count"), "[^0-9]", ""))
-df_pin = df_pin.withColumn("follower_count", F.col("follower_count").cast(IntegerType()))
+    # 3. Ensure that each column containing numeric data has a numeric data type
+    numeric_columns = ['follower_count', 'downloaded', 'index']
+    for col in numeric_columns:
+        df_pin = df_pin.withColumn(col, F.col(col).cast(IntegerType()))
 
-# COMMAND ----------
+    # 4. Clean the data in the save_location column to include only the save location path
+    df_pin = df_pin.withColumn("save_location", F.regexp_replace(F.col("save_location"), "^Local save in ", ""))
 
-# 3. Ensure that each column containing numeric data has a numeric data type
-numeric_columns = ['follower_count', 'downloaded', 'index']
-for col in numeric_columns:
-    df_pin = df_pin.withColumn(col, F.col(col).cast(IntegerType()))
+    # 5. Rename the index column to ind
+    df_pin = df_pin.withColumnRenamed("index", "ind")
 
-# COMMAND ----------
+    # 6. Reorder the DataFrame columns 
+    df_pin = df_pin.select("ind", "unique_id", "title", "description", "follower_count",
+                        "poster_name", "tag_list", "is_image_or_video", "image_src",
+                        "save_location", "category")
+    
+    return df_pin
 
-# 4. Clean the data in the save_location column to include only the save location path
-df_pin = df_pin.withColumn("save_location", F.regexp_replace(F.col("save_location"), "^Local save in ", ""))
-
-# COMMAND ----------
-
-# 5. Rename the index column to ind
-df_pin = df_pin.withColumnRenamed("index", "ind")
-
-# COMMAND ----------
-
-# 6. Reorder the DataFrame columns
-df_pin = df_pin.select("ind", "unique_id", "title", "description", "follower_count",
-                       "poster_name", "tag_list", "is_image_or_video", "image_src",
-                       "save_location", "category")
-
-# COMMAND ----------
-
-display(df_pin)
+df_pin = clean_df_pin(df_pin)
 
 # COMMAND ----------
 
@@ -125,27 +116,22 @@ display(df_geo)
 
 # COMMAND ----------
 
-# 1. Create a new column 'coordinates' that contains an array based on the 'latitude' and 'longitude' columns
-df_geo = df_geo.withColumn("coordinates", F.array("latitude", "longitude"))
+def clean_df_geo(df_geo):
+    # 1. Create a new column 'coordinates' that contains an array based on the 'latitude' and 'longitude' columns
+    df_geo = df_geo.withColumn("coordinates", F.array("latitude", "longitude"))
 
-# COMMAND ----------
+    # 2. Drop the 'latitude' and 'longitude' columns from the DataFrame
+    df_geo = df_geo.drop("latitude", "longitude")
 
-# 2. Drop the 'latitude' and 'longitude' columns from the DataFrame
-df_geo = df_geo.drop("latitude", "longitude")
+    # 3. Convert the 'timestamp' column from a string to a timestamp data type
+    df_geo = df_geo.withColumn("timestamp", F.col("timestamp").cast("timestamp"))
 
-# COMMAND ----------
+    # 4. Reorder the DataFrame columns to have the specified column order
+    df_geo = df_geo.select("ind", "country", "coordinates", "timestamp")
 
-# 3. Convert the 'timestamp' column from a string to a timestamp data type
-df_geo = df_geo.withColumn("timestamp", F.col("timestamp").cast("timestamp"))
+    return df_geo
 
-# COMMAND ----------
-
-# 4. Reorder the DataFrame columns to have the specified column order
-df_geo = df_geo.select("ind", "country", "coordinates", "timestamp")
-
-# COMMAND ----------
-
-display(df_geo)
+df_geo = clean_df_geo(df_geo)
 
 # COMMAND ----------
 
@@ -164,27 +150,22 @@ display(df_user)
 
 # COMMAND ----------
 
-# 1. Create a new column 'user_name' that concatenates 'first_name' and 'last_name'
-df_user = df_user.withColumn("user_name", F.concat_ws(" ", F.col("first_name"), F.col("last_name")))
+def clean_df_user(df_user):
+  # 1. Create a new column 'user_name' that concatenates 'first_name' and 'last_name'
+  df_user = df_user.withColumn("user_name", F.concat_ws(" ", F.col("first_name"), F.col("last_name")))
 
-# COMMAND ----------
+  # 2. Drop the 'first_name' and 'last_name' columns from the DataFrame
+  df_user = df_user.drop("first_name", "last_name")
 
-# 2. Drop the 'first_name' and 'last_name' columns from the DataFrame
-df_user = df_user.drop("first_name", "last_name")
+  # 3. Convert the 'date_joined' column from a string to a timestamp data type
+  df_user = df_user.withColumn("date_joined", F.col("date_joined").cast("timestamp"))
 
-# COMMAND ----------
+  # 4. Reorder the DataFrame columns to have the specified column order
+  df_user = df_user.select("ind", "user_name", "age", "date_joined")
+  
+  return df_user
 
-# 3. Convert the 'date_joined' column from a string to a timestamp data type
-df_user = df_user.withColumn("date_joined", F.col("date_joined").cast("timestamp"))
-
-# COMMAND ----------
-
-# 4. Reorder the DataFrame columns to have the specified column order
-df_user = df_user.select("ind", "user_name", "age", "date_joined")
-
-# COMMAND ----------
-
-display(df_user)
+df_user = clean_df_user(df_user)
 
 # COMMAND ----------
 
