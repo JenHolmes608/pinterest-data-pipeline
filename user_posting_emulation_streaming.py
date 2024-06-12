@@ -1,12 +1,11 @@
 import requests
 from time import sleep
 import random
-from multiprocessing import Process
-import boto3
 import json
 import sqlalchemy
 from sqlalchemy import text
 import yaml
+from datetime import datetime
 
 random.seed(100)
 
@@ -28,14 +27,11 @@ class AWSDBConnector:
 
 new_connector = AWSDBConnector()
 
-kinesis_client = boto3.client('kinesis', region_name='eu-west-1')
-
-def send_to_kinesis(stream_name, data):
-    kinesis_client.put_record(
-        StreamName=stream_name,
-        Data=json.dumps(data),
-        PartitionKey="partition_key"
-    )
+def serialize_row(row):
+    for key, value in row.items():
+        if isinstance(value, datetime):
+            row[key] = value.isoformat()
+    return row
 
 def run_infinite_post_data_loop():
     while True:
@@ -49,25 +45,52 @@ def run_infinite_post_data_loop():
             
             for row in pin_selected_row:
                 pin_result = dict(row._mapping)
-                send_to_kinesis('streaming-0afff69adbe3-pin', pin_result)
+                pin_result = serialize_row(pin_result)
 
             geo_string = text(f"SELECT * FROM geolocation_data LIMIT {random_row}, 1")
             geo_selected_row = connection.execute(geo_string)
             
             for row in geo_selected_row:
                 geo_result = dict(row._mapping)
-                send_to_kinesis('streaming-0afff69adbe3-geo', geo_result)
+                geo_result = serialize_row(geo_result)
 
             user_string = text(f"SELECT * FROM user_data LIMIT {random_row}, 1")
             user_selected_row = connection.execute(user_string)
             
             for row in user_selected_row:
                 user_result = dict(row._mapping)
-                send_to_kinesis('streaming-0afff69adbe3-user', user_result)
+                user_result = serialize_row(user_result)
 
             print(pin_result)
             print(geo_result)
             print(user_result)
+
+            pin_payload = json.dumps({
+                "StreamName": "streaming-0afff69adbe3-pin",
+                "Data": pin_result, 
+                "PartitionKey": "partition-1"
+            })
+
+            kin_pin_response = requests.request("PUT", 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/streams', headers={'Content-Type': 'application/json'}, data=pin_payload)
+            print(kin_pin_response.status_code)
+
+            geo_payload = json.dumps({
+                "StreamName": "streaming-0afff69adbe3-geo",
+                "Data": geo_result, 
+                "PartitionKey": "partition-2"
+            })
+
+            kin_geo_response = requests.request("PUT", 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/streams', headers={'Content-Type': 'application/json'}, data=geo_payload)
+            print(kin_geo_response.status_code)
+
+            user_payload = json.dumps({
+                "StreamName": "streaming-0afff69adbe3-user",
+                "Data": user_result, 
+                "PartitionKey": "partition-3"
+            })
+
+            kin_user_response = requests.request("PUT", 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/streams', headers={'Content-Type': 'application/json'}, data=user_payload)
+            print(kin_user_response.status_code)
 
 if __name__ == "__main__":
     run_infinite_post_data_loop()
