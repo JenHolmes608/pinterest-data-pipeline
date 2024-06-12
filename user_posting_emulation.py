@@ -6,6 +6,7 @@ import boto3
 import json
 import sqlalchemy
 from sqlalchemy import text
+import yaml
 
 
 random.seed(100)
@@ -14,12 +15,14 @@ random.seed(100)
 class AWSDBConnector:
 
     def __init__(self):
-
-        self.HOST = "pinterestdbreadonly.cq2e8zno855e.eu-west-1.rds.amazonaws.com"
-        self.USER = 'project_user'
-        self.PASSWORD = ':t%;yCY3Yjg'
-        self.DATABASE = 'pinterest_data'
-        self.PORT = 3306
+        with open('pinterest_db_creds.yaml', 'r') as file:
+            creds = yaml.safe_load(file)
+        
+        self.HOST = creds['HOST']
+        self.USER = creds['USER']
+        self.PASSWORD = creds['PASSWORD']
+        self.DATABASE = creds['DATABASE']
+        self.PORT = creds['PORT']
         
     def create_db_connector(self):
         engine = sqlalchemy.create_engine(f"mysql+pymysql://{self.USER}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{self.DATABASE}?charset=utf8mb4")
