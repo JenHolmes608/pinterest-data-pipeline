@@ -10,6 +10,8 @@ The Pinterest Data Pipeline project is designed to achieve the following objecti
 - Process and transform the extracted data into a structured format suitable for analysis.
 - Load the processed data into a data storage system for further analysis and visualization.
 
+![image](https://github.com/JenHolmes608/pinterest-data-pipeline/assets/152791683/4c539054-fd4a-4b59-9f60-e32f243c1472)
+
 ## Getting Started
 
 To begin using this project, follow these steps:
