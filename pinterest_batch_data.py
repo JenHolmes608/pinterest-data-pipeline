@@ -36,7 +36,7 @@ SOURCE_URL = "s3n://{0}:{1}@{2}".format(ACCESS_KEY, ENCODED_SECRET_KEY, AWS_S3_B
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC
+# MAGIC -- Disable format checks during the reading of Delta tables
 # MAGIC SET spark.databricks.delta.formatCheck.enabled=false
 
 # COMMAND ----------
@@ -57,7 +57,24 @@ display(df_pin)
 # COMMAND ----------
 
 def clean_df_pin(df_pin):
-    # 1. Replace empty entries and entries with no relevant data in each column with Nones
+    """
+    Cleans and transforms the pin DataFrame by performing the following steps:
+    
+    1. Replace empty entries and entries with no relevant data in each column with None.
+    2. Convert the `follower_count` column to integers, ensuring every entry is a number.
+    3. Ensure numeric data columns have appropriate numeric data types.
+    4. Clean the data in the `save_location` column to include only the save location path.
+    5. Rename the `index` column to `ind`.
+    6. Reorder the DataFrame columns.
+
+    Parameters:
+    df_pin (DataFrame): Input DataFrame containing Pinterest data.
+
+    Returns:
+    DataFrame: Cleaned and transformed DataFrame.
+    """
+    
+    # Define the conditions for replacing invalid entries with None
     conditions = [
         ("", None),
         ("No description available Story format", None),
@@ -67,36 +84,36 @@ def clean_df_pin(df_pin):
         ("No Title Data Available", None)
     ]
 
-    # Function to apply multiple conditions
+    # Function to apply multiple conditions to a column
     def apply_conditions(col, conditions):
         return reduce(lambda acc, cond: F.when(F.col(col) == cond[0], cond[1]).otherwise(acc), conditions, F.col(col))
 
     # Apply the conditions to each column
     df_pin = df_pin.select([apply_conditions(c, conditions).alias(c) for c in df_pin.columns])
 
-    # 2. Perform the necessary transformations on the follower_count to ensure every entry is a number and convert to int
     # Remove non-numeric characters from follower_count and convert to integer
     df_pin = df_pin.withColumn("follower_count", F.regexp_replace(F.col("follower_count"), "[^0-9]", ""))
     df_pin = df_pin.withColumn("follower_count", F.col("follower_count").cast(IntegerType()))
 
-    # 3. Ensure that each column containing numeric data has a numeric data type
+    # Ensure numeric columns have the correct data type
     numeric_columns = ['follower_count', 'downloaded', 'index']
     for col in numeric_columns:
         df_pin = df_pin.withColumn(col, F.col(col).cast(IntegerType()))
 
-    # 4. Clean the data in the save_location column to include only the save location path
+    # Clean the save_location column
     df_pin = df_pin.withColumn("save_location", F.regexp_replace(F.col("save_location"), "^Local save in ", ""))
 
-    # 5. Rename the index column to ind
+    # Rename the index column to ind
     df_pin = df_pin.withColumnRenamed("index", "ind")
 
-    # 6. Reorder the DataFrame columns 
+    # Reorder the DataFrame columns
     df_pin = df_pin.select("ind", "unique_id", "title", "description", "follower_count",
-                        "poster_name", "tag_list", "is_image_or_video", "image_src",
-                        "save_location", "category")
+                           "poster_name", "tag_list", "is_image_or_video", "image_src",
+                           "save_location", "category")
     
     return df_pin
 
+# Apply the cleaning function to the df_pin DataFrame
 df_pin = clean_df_pin(df_pin)
 
 # COMMAND ----------
@@ -117,20 +134,35 @@ display(df_geo)
 # COMMAND ----------
 
 def clean_df_geo(df_geo):
-    # 1. Create a new column 'coordinates' that contains an array based on the 'latitude' and 'longitude' columns
+    """
+    Cleans and transforms the geo DataFrame by performing the following steps:
+    
+    1. Create a new column 'coordinates' that contains an array based on the 'latitude' and 'longitude' columns.
+    2. Drop the 'latitude' and 'longitude' columns from the DataFrame.
+    3. Convert the 'timestamp' column from a string to a timestamp data type.
+    4. Reorder the DataFrame columns to have the specified column order: 'ind', 'country', 'coordinates', 'timestamp'.
+
+    Parameters:
+    df_geo (DataFrame): Input DataFrame containing geolocation data.
+
+    Returns:
+    DataFrame: Cleaned and transformed DataFrame.
+    """
+    # Create a new column 'coordinates' that contains an array based on the 'latitude' and 'longitude' columns
     df_geo = df_geo.withColumn("coordinates", F.array("latitude", "longitude"))
 
-    # 2. Drop the 'latitude' and 'longitude' columns from the DataFrame
+    # Drop the 'latitude' and 'longitude' columns from the DataFrame
     df_geo = df_geo.drop("latitude", "longitude")
 
-    # 3. Convert the 'timestamp' column from a string to a timestamp data type
+    # Convert the 'timestamp' column from a string to a timestamp data type
     df_geo = df_geo.withColumn("timestamp", F.col("timestamp").cast("timestamp"))
 
-    # 4. Reorder the DataFrame columns to have the specified column order
+    # Reorder the DataFrame columns to have the specified column order
     df_geo = df_geo.select("ind", "country", "coordinates", "timestamp")
 
     return df_geo
 
+# Apply the cleaning function to the df_geo DataFrame
 df_geo = clean_df_geo(df_geo)
 
 # COMMAND ----------
@@ -151,20 +183,35 @@ display(df_user)
 # COMMAND ----------
 
 def clean_df_user(df_user):
-  # 1. Create a new column 'user_name' that concatenates 'first_name' and 'last_name'
-  df_user = df_user.withColumn("user_name", F.concat_ws(" ", F.col("first_name"), F.col("last_name")))
+    """
+    Cleans and transforms the user DataFrame by performing the following steps:
+    
+    1. Create a new column 'user_name' that concatenates 'first_name' and 'last_name'.
+    2. Drop the 'first_name' and 'last_name' columns from the DataFrame.
+    3. Convert the 'date_joined' column from a string to a timestamp data type.
+    4. Reorder the DataFrame columns to have the specified column order: 'ind', 'user_name', 'age', 'date_joined'.
 
-  # 2. Drop the 'first_name' and 'last_name' columns from the DataFrame
-  df_user = df_user.drop("first_name", "last_name")
+    Parameters:
+    df_user (DataFrame): Input DataFrame containing user data.
 
-  # 3. Convert the 'date_joined' column from a string to a timestamp data type
-  df_user = df_user.withColumn("date_joined", F.col("date_joined").cast("timestamp"))
+    Returns:
+    DataFrame: Cleaned and transformed DataFrame.
+    """
+    # Create a new column 'user_name' that concatenates 'first_name' and 'last_name'
+    df_user = df_user.withColumn("user_name", F.concat_ws(" ", F.col("first_name"), F.col("last_name")))
 
-  # 4. Reorder the DataFrame columns to have the specified column order
-  df_user = df_user.select("ind", "user_name", "age", "date_joined")
-  
-  return df_user
+    # Drop the 'first_name' and 'last_name' columns from the DataFrame
+    df_user = df_user.drop("first_name", "last_name")
 
+    # Convert the 'date_joined' column from a string to a timestamp data type
+    df_user = df_user.withColumn("date_joined", F.col("date_joined").cast("timestamp"))
+
+    # Reorder the DataFrame columns to have the specified column order
+    df_user = df_user.select("ind", "user_name", "age", "date_joined")
+    
+    return df_user
+
+# Apply the cleaning function to the df_user DataFrame
 df_user = clean_df_user(df_user)
 
 # COMMAND ----------

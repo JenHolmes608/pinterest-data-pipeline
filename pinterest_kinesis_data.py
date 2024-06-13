@@ -36,6 +36,7 @@ ENCODED_SECRET_KEY = urllib.parse.quote(string=SECRET_KEY, safe="")
 
 # COMMAND ----------
 
+# Define the schema for the data stream
 pin_struct = StructType([
     StructField("category", StringType(), True),
     StructField("description", StringType(), True),
@@ -51,31 +52,40 @@ pin_struct = StructType([
     StructField("unique_id", StringType(), True)
 ])
 
+# Read data from Kinesis stream
 df_pin = spark \
-.readStream \
-.format('kinesis') \
-.option('streamName','streaming-0afff69adbe3-pin') \
-.option('initialPosition','latest') \
-.option('region','us-east-1') \
-.option('awsAccessKey', ACCESS_KEY) \
-.option('awsSecretKey', SECRET_KEY) \
-.option("mergeSchema", "true")\
-.load()
+    .readStream \
+    .format('kinesis') \
+    .option('streamName', 'streaming-0afff69adbe3-pin') \
+    .option('initialPosition', 'latest') \
+    .option('region', 'us-east-1') \
+    .option('awsAccessKey', ACCESS_KEY) \
+    .option('awsSecretKey', SECRET_KEY) \
+    .option("mergeSchema", "true") \
+    .load()
 
+# Convert the binary data to JSON string
 df_pin = df_pin.selectExpr("CAST(data AS STRING) jsonData")
+
+# Parse the JSON string into a DataFrame with the defined schema
 df_pin = df_pin.select(from_json("jsonData", pin_struct).alias("data")).select("data.*")
+
+# Clean the DataFrame using a custom cleaning function
 df_pin = clean_df_pin(df_pin)
 
+# Display the DataFrame for visualization
 display(df_pin)
 
+# Write the stream data to a Delta table with checkpointing
 df_pin.writeStream \
-  .format("delta") \
-  .outputMode("append") \
-  .option("checkpointLocation", "/tmp/kinesis/_checkpoints/") \
-  .table("0afff69adbe3_pin_table")
+    .format("delta") \
+    .outputMode("append") \
+    .option("checkpointLocation", "/tmp/kinesis/_checkpoints/") \
+    .table("0afff69adbe3_pin_table")
 
 # COMMAND ----------
 
+# Define the schema for the data stream
 geo_struct = StructType([
     StructField("ind", StringType(), True),
     StructField("timestamp", StringType(), True),
@@ -84,30 +94,39 @@ geo_struct = StructType([
     StructField("country", StringType(), True)
 ])
 
+# Read data from the Kinesis stream
 df_geo = spark \
-.readStream \
-.format('kinesis') \
-.option('streamName','streaming-0afff69adbe3-geo') \
-.option('initialPosition','latest') \
-.option('region','us-east-1') \
-.option('awsAccessKey', ACCESS_KEY) \
-.option('awsSecretKey', SECRET_KEY) \
-.load()
+    .readStream \
+    .format('kinesis') \
+    .option('streamName', 'streaming-0afff69adbe3-geo') \
+    .option('initialPosition', 'latest') \
+    .option('region', 'us-east-1') \
+    .option('awsAccessKey', ACCESS_KEY) \
+    .option('awsSecretKey', SECRET_KEY) \
+    .load()
 
+# Convert the binary data to JSON string
 df_geo = df_geo.selectExpr("CAST(data AS STRING) jsonData")
+
+# Parse the JSON string into a DataFrame with the defined schema
 df_geo = df_geo.select(from_json("jsonData", geo_struct).alias("data")).select("data.*")
+
+# Clean the DataFrame using a custom cleaning function
 df_geo = clean_df_geo(df_geo)
 
+# Display the DataFrame for visualization
 display(df_geo)
 
+# Write the stream data to a Delta table with checkpointing
 df_geo.writeStream \
-  .format("delta") \
-  .outputMode("append") \
-  .option("checkpointLocation", "/tmp/kinesis/_checkpoints/") \
-  .table("0afff69adbe3_geo_table")
+    .format("delta") \
+    .outputMode("append") \
+    .option("checkpointLocation", "/tmp/kinesis/_checkpoints/") \
+    .table("0afff69adbe3_geo_table")
 
 # COMMAND ----------
 
+# Define the schema for the data stream
 user_struct = StructType([
     StructField("age", IntegerType(), True),
     StructField("date_joined", StringType(), True),
@@ -116,24 +135,32 @@ user_struct = StructType([
     StructField("last_name", StringType(), True)
 ])
 
+# Read data from the Kinesis data stream
 df_user = spark \
-.readStream \
-.format('kinesis') \
-.option('streamName','streaming-0afff69adbe3-user') \
-.option('initialPosition','latest') \
-.option('region','us-east-1') \
-.option('awsAccessKey', ACCESS_KEY) \
-.option('awsSecretKey', SECRET_KEY) \
-.load()
+    .readStream \
+    .format('kinesis') \
+    .option('streamName', 'streaming-0afff69adbe3-user') \
+    .option('initialPosition', 'latest') \
+    .option('region', 'us-east-1') \
+    .option('awsAccessKey', ACCESS_KEY) \
+    .option('awsSecretKey', SECRET_KEY) \
+    .load()
 
+# Convert the binary data to JSON string
 df_user = df_user.selectExpr("CAST(data AS STRING) jsonData")
+
+# Parse the JSON string into a DataFrame with the defined schema
 df_user = df_user.select(from_json("jsonData", user_struct).alias("data")).select("data.*")
+
+# Clean the DataFrame using a custom cleaning function
 df_user = clean_df_user(df_user)
 
+# Display the DataFrame for visualization
 display(df_user)
 
+# Write the stream data to a Delta table with checkpointing
 df_user.writeStream \
-  .format("delta") \
-  .outputMode("append") \
-  .option("checkpointLocation", "/tmp/kinesis/_checkpoints/") \
-  .table("0afff69adbe3_user_table")
+    .format("delta") \
+    .outputMode("append") \
+    .option("checkpointLocation", "/tmp/kinesis/_checkpoints/") \
+    .table("0afff69adbe3_user_table")
