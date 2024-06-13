@@ -28,40 +28,37 @@ Configure your Pinterest API credentials and any other required configurations.
 Execute the Python scripts or notebooks provided to extract, process, and load the data.
 Monitor the pipeline execution and address any errors or issues encountered.
 
-Contents
-0afff69adbe3_dag.py
+##Contents
+###0afff69adbe3_dag.py
 Defines a Directed Acyclic Graph (DAG) named 0afff69adbe3_dag for scheduling tasks related to data processing and analysis. Tasks include submitting Databricks notebook tasks to an existing cluster.
 
-pinterest_batch_data
+###pinterest_batch_data
 This directory contains notebooks and scripts focused on batch processing and analysis of Pinterest data:
 
-Pin Cleaning and Analysis: Scripts (pin_cleaning.py, pin_analysis.py) for cleaning raw pin data and performing analytics (e.g., category insights, popularity trends).
-User Data Processing: Scripts (user_processing.py) for cleaning and analyzing user data, including demographics and follower analysis.
-Geo Data Analysis: Scripts (geo_analysis.py) for processing geographical data associated with pins, providing insights at a country level.
-pinterest_kinesis_data
+###pinterest_kinesis_data
 Utilizes the Databricks environment for Spark-based data processing and streaming:
-
-Data Streaming: Processes streams (pins, geolocation, users) from Kinesis:
 Reads data from respective Kinesis streams.
 Converts binary data to JSON format.
 Parses JSON into DataFrames using predefined schemas.
 Applies custom cleaning functions (clean_df_pin, clean_df_geo, clean_df_user) to prepare data.
 Visualizes cleaned dataframes.
 Writes cleaned stream data to Delta tables in append mode.
-user_posting_emulation.py
-Enables continuous data sending from an AWS RDS MySQL database to Kafka topics:
 
+###user_posting_emulation.py
+Enables continuous data sending from an AWS RDS MySQL database to Kafka topics:
 Multiprocessing: Facilitates concurrent data fetching and sending.
 Integration with AWS Services: Utilizes API Gateway for invoking Kafka topic APIs.
-user_posting_emulation_streaming.py
-Facilitates continuous data extraction from an AWS RDS MySQL database and posts it to AWS Kinesis streams:
 
+###user_posting_emulation_streaming.py
+Facilitates continuous data extraction from an AWS RDS MySQL database and posts it to AWS Kinesis streams:
 Data Extraction: Fetches data using multiprocessing for efficiency.
 AWS Integration: Posts data to Kinesis streams via API Gateway endpoints.
-Contributing
+
+
+##Contributing
 Contributions to this project are welcomed! If you have ideas for improvements or new features, feel free to open an issue or submit a pull request. Please review the Contribution Guidelines before contributing.
 
-License
+##License
 This project is licensed under the MIT License.
 
 For questions or feedback, please contact Jen Holmes.
