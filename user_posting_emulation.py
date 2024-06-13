@@ -8,13 +8,24 @@ import sqlalchemy
 from sqlalchemy import text
 import yaml
 
-
 random.seed(100)
 
-
 class AWSDBConnector:
+    """
+    A class to manage the connection to the AWS RDS MySQL database.
 
+    Attributes:
+    HOST (str): Database host address.
+    USER (str): Database username.
+    PASSWORD (str): Database password.
+    DATABASE (str): Database name.
+    PORT (int): Database port number.
+    """
+    
     def __init__(self):
+        """
+        Initializes the AWSDBConnector by loading database credentials from a YAML file.
+        """
         with open('pinterest_db_creds.yaml', 'r') as file:
             creds = yaml.safe_load(file)
         
@@ -25,19 +36,37 @@ class AWSDBConnector:
         self.PORT = creds['PORT']
         
     def create_db_connector(self):
+        """
+        Creates a SQLAlchemy engine for connecting to the MySQL database.
+
+        Returns:
+        sqlalchemy.engine.Engine: SQLAlchemy engine object.
+        """
         engine = sqlalchemy.create_engine(f"mysql+pymysql://{self.USER}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{self.DATABASE}?charset=utf8mb4")
         return engine
 
-
 new_connector = AWSDBConnector()
 
+class SendData:
+    """
+    A class to manage the sending of data to a Kafka topic.
 
-class SendData():
+    Attributes:
+    max_iterations (int): Maximum number of iterations for the data sending loop.
+    current_iteration (int): Current iteration count.
+    """
+    
     def __init__(self):
+        """
+        Initializes the SendData class with default values for iterations.
+        """
         self.max_iterations = 10 
         self.current_iteration = 0 
         
     def run_post_data_loop(self):
+        """
+        Runs a loop to fetch data from the database and send it to Kafka topics.
+        """
         while self.current_iteration < self.max_iterations:
             sleep(random.randrange(0, 2))
             random_row = random.randint(0, 11000)
@@ -72,6 +101,13 @@ class SendData():
                 break
 
     def send_data_to_kafka_topic(self, data, topic_name):
+        """
+        Sends data to a specified Kafka topic.
+
+        Args:
+        data (dict): Data to be sent to Kafka.
+        topic_name (str): Name of the Kafka topic.
+        """
         api_invoke_url = 'https://sqixei7ili.execute-api.us-east-1.amazonaws.com/newstage/topics'
         headers = {'Content-Type': 'application/vnd.kafka.json.v2+json'}
         payload = {
@@ -83,17 +119,14 @@ class SendData():
         else:
             print(f"Failed to send data to Kafka topic '{topic_name}'. Status code: {response.status_code}")
 
-
 send_data_instance = SendData()
-
 
 send_data_instance.run_post_data_loop()
 
 if __name__ == "__main__":
     send_data_instance = SendData()
-    send_data_instance.run_infinite_post_data_loop()
+    send_data_instance.run_post_data_loop()
     print('Working')
-    
-    
+
 
 

@@ -10,8 +10,21 @@ from datetime import datetime
 random.seed(100)
 
 class AWSDBConnector:
+    """
+    A class to manage the connection to the AWS RDS MySQL database.
 
+    Attributes:
+    HOST (str): Database host address.
+    USER (str): Database username.
+    PASSWORD (str): Database password.
+    DATABASE (str): Database name.
+    PORT (int): Database port number.
+    """
+    
     def __init__(self):
+        """
+        Initializes the AWSDBConnector by loading database credentials from a YAML file.
+        """
         with open('db_creds.yaml', 'r') as file:
             creds = yaml.safe_load(file)
         
@@ -22,18 +35,36 @@ class AWSDBConnector:
         self.PORT = creds['PORT']
         
     def create_db_connector(self):
+        """
+        Creates a SQLAlchemy engine for connecting to the MySQL database.
+
+        Returns:
+        sqlalchemy.engine.Engine: SQLAlchemy engine object.
+        """
         engine = sqlalchemy.create_engine(f"mysql+pymysql://{self.USER}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{self.DATABASE}?charset=utf8mb4")
         return engine
 
 new_connector = AWSDBConnector()
 
 def serialize_row(row):
+    """
+    Serializes datetime objects in a database row to ISO format strings.
+
+    Args:
+    row (dict): A dictionary representing a row from the database.
+
+    Returns:
+    dict: The modified row dictionary with datetime objects serialized to strings.
+    """
     for key, value in row.items():
         if isinstance(value, datetime):
             row[key] = value.isoformat()
     return row
 
 def run_infinite_post_data_loop():
+    """
+    Continuously fetches data from the database and sends it to specified endpoints.
+    """
     while True:
         sleep(random.randrange(0, 2))
         random_row = random.randint(0, 11000)
